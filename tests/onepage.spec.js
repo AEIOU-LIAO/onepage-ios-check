@@ -9,8 +9,17 @@ test('登录、刷新后恢复', async ({ page }) => {
   await test.step('用测试账号登录，进入首页', async () => { await login(page); await shot(page, '首页'); });
   const todo = `${TAG}-${Date.now()}`;
   await test.step('加一条待办', async () => {
+    await page.locator('#todoInput').scrollIntoViewIfNeeded();
     await page.fill('#todoInput', todo); await page.press('#todoInput', 'Enter');
-    await expect(page.locator('#todoList .tt', { hasText: todo })).toBeVisible();
+    const row = page.locator('#todoList .tt', { hasText: todo });
+    const added = await row.waitFor({ state: 'visible', timeout: 6000 }).then(() => true, () => false);
+    if (!added) {
+      // 没加上：把当时的情况记下来（提示条、待办区的文字、输入框里还剩什么），方便判断是页面的问题还是脚本的问题
+      const info = await page.evaluate(() => ({ toast: (document.querySelector('#toast') || {}).innerText || '', list: document.querySelector('#todoList').innerText.slice(0, 80),
+        inputLeft: document.querySelector('#todoInput').value.length, hasSubmit: !!document.querySelector('#todoAdd [type=submit], #todoAdd button:not([type=button])') }));
+      await shot(page, '待办没加上');
+      throw new Error('按回车后待办没有出现：' + JSON.stringify(info));
+    }
     await page.waitForTimeout(1500);
   });
   await test.step('刷新页面：还是登录状态，待办还在', async () => {
