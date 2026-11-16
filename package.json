@@ -1,0 +1,8 @@
+{
+  "name": "onepage-ios-check",
+  "private": true,
+  "version": "1.0.0",
+  "description": "用 Playwright 的 WebKit（Safari 内核）按 iPhone 尺寸检查线上的 OnePage",
+  "scripts": { "test": "playwright test" },
+  "devDependencies": { "@playwright/test": "^1.49.0" }
+}
