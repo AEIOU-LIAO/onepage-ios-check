@@ -19,7 +19,10 @@ async function login(page) {
 let n = 0;
 async function shot(page, name) {
   await page.screenshot({ path: `shots/${String(++n).padStart(2, '0')}-${name}.png`,
-    mask: [page.locator('#greet'), page.locator('#accBtn'), page.locator('#accMenu'), page.locator('#loginForm input')], maskColor: '#888888' });
+    mask: [page.locator('#greet'), page.locator('#accBtn'), page.locator('#accMenu'), page.locator('#loginForm input'),
+      // 测试账号里原有的对话标题、待办也盖住（只露出这次检查自己写入的）
+      page.locator('#chatHistory .h-item').filter({ hasNotText: 'iOS自动检查' }), page.locator('#multiHistory .h-item'),
+      page.locator('#todoList li').filter({ hasNotText: 'iOS自动检查' })], maskColor: '#888888' });
 }
 // 页面状态：缩放倍数、横向溢出、16px 文字实际渲染出来的高度（被系统自动放大的话这里会变）
 const state = page => page.evaluate(() => {
