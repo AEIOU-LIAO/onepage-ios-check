@@ -10,6 +10,7 @@ test('登录、刷新后恢复', async ({ page }) => {
   const todo = `${TAG}-${Date.now()}`;
   await test.step('加一条待办', async () => {
     await page.locator('#todoInput').scrollIntoViewIfNeeded();
+    await expect(page.locator('#todoList')).not.toContainText('正在读取', { timeout: 20_000 });   // 待办读完之前页面不让加（会提示稍等）
     await page.fill('#todoInput', todo); await page.press('#todoInput', 'Enter');
     const row = page.locator('#todoList .tt', { hasText: todo });
     const added = await row.waitFor({ state: 'visible', timeout: 6000 }).then(() => true, () => false);
