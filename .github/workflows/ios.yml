@@ -1,7 +1,17 @@
 name: iPhone（WebKit）检查
+run-name: OnePage WebKit · ${{ inputs.suite }}
 
 on:
   workflow_dispatch:
+    inputs:
+      suite:
+        description: 小版本 smoke / 大版本 release（包含小版本）
+        type: choice
+        options:
+          - smoke
+          - release
+        default: smoke
+        required: true
 
 concurrency:
   group: ios-check
@@ -12,7 +22,7 @@ permissions:
 jobs:
   check:
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +34,12 @@ jobs:
       - run: npx playwright install webkit
       - name: 跑检查
         env:
+          QA_SUITE: ${{ inputs.suite }}
           TEST_USER: ${{ secrets.TEST_USER }}
           TEST_PASS: ${{ secrets.TEST_PASS }}
-        run: npm test
+        run: |
+          case "$QA_SUITE" in
+            smoke) npm test -- --grep @smoke ;;
+            release) npm test ;;
+            *) echo '未识别的测试档位'; exit 2 ;;
+          esac

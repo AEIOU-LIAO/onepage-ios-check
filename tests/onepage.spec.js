@@ -4,7 +4,7 @@ const { login, state, watchErrors, api } = require('./helpers');
 const { randomUUID, randomBytes } = require('node:crypto');
 const TAG = 'iOS自动检查';
 
-test('登录、刷新后恢复', async ({ page, baseURL }) => {
+test('S02 登录与刷新恢复，待办可新增和清理', { tag: ['@smoke', '@p0'] }, async ({ page, baseURL }) => {
   const errs = watchErrors(page);
   await test.step('打开网站', async () => { await page.goto('./'); await expect(page.locator('#loginForm [name=username], #app:not([hidden])').first()).toBeVisible({ timeout: 30_000 }); });
   await test.step('用测试账号登录，进入首页', async () => { await login(page, baseURL); });
@@ -40,11 +40,11 @@ test('登录、刷新后恢复', async ({ page, baseURL }) => {
   await test.step('没有页面脚本错误', async () => { expect(errs()).toBe(0); });
 });
 
-test('页面操作：缩放设置、横竖屏、对话框', async ({ page, baseURL }) => {
+test('S03 首页与聊天布局，支持横竖屏尺寸和窗口开关', { tag: ['@smoke', '@p1'] }, async ({ page, baseURL }) => {
   const errs = watchErrors(page);
   await login(page, baseURL);
   const p1 = await state(page);
-  await test.step('整页不能放大（iPhone 上放大会导致页面重开）', async () => {
+  await test.step('检查页面的缩放限制和手势监听', async () => {
     expect(await page.getAttribute('meta[name=viewport]', 'content')).toContain('maximum-scale=1');
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe('pan-x pan-y');
     expect(await page.evaluate(() => { const e = new Event('gesturestart', { cancelable: true, bubbles: true }); document.body.dispatchEvent(e); return e.defaultPrevented; })).toBe(true);
@@ -91,7 +91,7 @@ test('页面操作：缩放设置、横竖屏、对话框', async ({ page, baseU
   await test.step('没有页面脚本错误', async () => { expect(errs()).toBe(0); });
 });
 
-test('聊天记录在两台设备之间同步', async ({ page, browser, baseURL }, testInfo) => {
+test('S04 两个独立会话同步聊天历史及删除', { tag: ['@smoke', '@p0'] }, async ({ page, browser, baseURL }, testInfo) => {
   // 设备 A = page；设备 B = 另一个独立的浏览器环境（同一个测试账号）
   const errs = watchErrors(page);
   await login(page, baseURL);

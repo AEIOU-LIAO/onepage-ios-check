@@ -29,7 +29,7 @@ function watchErrors(page) {
 }
 // 带着登录状态直接调接口（不经过界面）
 const api = (page, method, path, body) => page.evaluate(async ([m, p, b]) => {
-  const r = await fetch(p, { method: m, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined });
+  const r = await fetch(p, { method: m, credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined });
   return { status: r.status, data: await r.json().catch(() => null) };
 }, [method, path, body]);
 module.exports = { login, state, watchErrors, api };
