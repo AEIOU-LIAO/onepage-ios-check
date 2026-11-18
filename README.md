@@ -1,15 +1,14 @@
 # OnePage iPhone 尺寸 WebKit 检查
 
-在 GitHub 托管的 Mac 上用 Playwright WebKit 和 iPhone 15 的屏幕尺寸、触摸参数及浏览器标识，检查 OnePage。
+在 GitHub 标准 macOS 上用 Playwright 的 WebKit 和 iPhone 15 参数检查 https://tools.peiqi1.top/。在 [Actions](https://github.com/AEIOU-LIAO/onepage-ios-check/actions/workflows/ios.yml) 点 **Run workflow**，选择档位后手动运行。
 
-在 Actions 选「iPhone（WebKit）检查」，从 main 手动运行。站点固定为 https://tools.peiqi1.top/。工作流通过 TEST_USER、TEST_PASS 读取专用普通测试账号。
+| 档位 | 使用时机 | 执行范围 |
+| --- | --- | --- |
+| 小版本 `smoke` | 日常修补、上线前快速确认 | `@smoke` 标记的核心流程 |
+| 大版本 `release` | 跨模块改动、发大版本 | 核心流程及所有扩展回归 |
 
-| 检查组 | 覆盖 |
-| --- | --- |
-| 登录和刷新恢复 | 登录，新增测试待办，刷新后确认会话与待办仍在，再删除待办 |
-| 页面操作 | 模拟横竖屏尺寸，检查横向溢出和字号，打开关闭聊天与检查菜单 |
-| 聊天历史同步 | 用两个独立浏览器会话验证同一测试对话的读取和删除同步，确认两条测试消息已载入页面 |
+[用例分级与覆盖矩阵](./COVERAGE.md)列出各模块的验证方式和剩余的真机项目。P0 是登录、数据保留和主要对话流程，P1 是常用功能和异常恢复，P2 是额外样式、配置和兼容性。
 
-对话由脚本写入合成记录，测试过程中无需调用模型。工作流只公开固定检查项及状态。详细错误、截图、录像、trace 和登录状态文件不发布。以前的运行及其产物独立保留。
+登录通过仓库 Secrets 的 TEST_USER、TEST_PASS 读取专用普通账号。两档均使用同一账号串行运行。线上待办和历史用例使用本轮合成条目并清理。模型和异常流程由浏览器拦截提供合成响应。公开日志只有固定用例标题、步骤和状态，没有截图、录像、trace 或登录状态文件。
 
-下列项目需在真实 iPhone 上确认：从主屏幕图标启动、系统键盘遮挡、Safari 边缘手势与切 App、锁屏和后台恢复、实际语音录入。这套检查使用桌面 WebKit 的手机尺寸和触摸模拟。
+GitHub Actions 的桌面 WebKit 用于网页层回归。主屏幕启动、真实键盘、Safari 边缘手势、后台切换、锁屏、真实录音由 iPhone 另验。
