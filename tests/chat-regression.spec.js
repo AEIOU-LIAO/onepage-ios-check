@@ -15,7 +15,7 @@ function provider(id, name) {
     id, name, defaultRegion: 'cn', image: id === 'qwen', imageN: [1],
     imageModels: ['release-synthetic-image'], imageSizes: [], imageOpts: [],
     chatModels: [MODEL], think: true, thinkRules: [['.*', 'switch']], web: true,
-    regions: [{ id: 'cn', label: '测试', full: '测试地区', hasKey: true, masked: 'synthetic', chatModels: [MODEL] }]
+    regions: [{ id: 'cn', label: '测试', full: '测试地区', hasKey: true, masked: 'synthetic', steps: [], chatModels: [MODEL] }]
   };
 }
 
@@ -236,22 +236,44 @@ test('R12 服务端错误可见，重试成功且问题不重复', { tag: ['@rel
 });
 
 test('R13 多问两栏分别完成，并携带问答接着聊（5-1/5-4）', { tag: ['@release', '@p1'] }, async ({ page, baseURL }) => {
-  await prepare(page, baseURL); await openMulti(page);
-  await test.step('两个服务商分别显示合成回答', async () => {
+  const errors = watchErrors(page);
+  await prepare(page, baseURL);
+  await openChat(page);
+  await page.locator('#chatClose').tap();
+  await expect(page.locator('#chat')).toBeHidden();
+  await openMulti(page);
+
+  const selected = page.locator('#multiGrid .mc').filter({
+    has: page.locator('.mc-head b').getByText('DeepSeek', { exact: true })
+  });
+  const deepseekIndex = await page.evaluate(() => window.__releaseChat.requests.findIndex(r => r.provider === 'deepseek'));
+  const deepseekText = [FIRST, SECOND][deepseekIndex].trim();
+
+  await test.step('两个服务商分别显示各自的合成回答', async () => {
     await emit(page, 0, FIRST); await emit(page, 1, SECOND); await finish(page, 0); await finish(page, 1);
     await expect(page.locator('#multiStop')).toBeHidden();
     await expect(page.locator('#multiGrid [data-a="pick"]')).toHaveCount(2);
+    await expect(page.locator('#multiGrid')).toContainText(FIRST.trim());
+    await expect(page.locator('#multiGrid')).toContainText(SECOND);
+    await expect(selected.locator('.mc-body')).toContainText(deepseekText);
     expect(await page.evaluate(() => new Set(window.__releaseChat.requests.map(r => r.provider)).size)).toBe(2);
   });
-  await test.step('选中一栏后打开对话并保留该栏上下文', async () => {
-    const selected = page.locator('#multiGrid .mc').filter({ has: page.locator('.mc-body', { hasText: FIRST }) });
-    await selected.locator('[data-a="pick"]').click();
+  await test.step('滚动至 DeepSeek 一栏，点击继续聊后切到该服务商', async () => {
+    const pick = selected.locator('[data-a="pick"]');
+    await pick.scrollIntoViewIfNeeded({ timeout: 10_000 });
+    await expect(pick).toBeInViewport();
+    await pick.tap({ timeout: 10_000 });
+    await expect(page.locator('#multi')).toBeHidden();
     await expect(page.locator('#chat')).toBeVisible();
-    await expectContent(page, '#chatBody .msg.ai', FIRST);
-    await expectContent(page, '#chatBody .msg.user', QUESTION);
+    await expect(page.locator('#chatName')).toHaveText('DeepSeek');
+  });
+  await test.step('单聊显示该栏的提问和回答，不产生新模型请求', async () => {
     await expect(page.locator('#chatBody .msg.user')).toHaveCount(1);
+    await expect(page.locator('#chatBody .msg.user .bub')).toContainText(QUESTION);
+    await expect(page.locator('#chatBody .msg.ai .bub')).toContainText(deepseekText);
     await expect(page.locator('#chatBody .msg.ai')).toHaveCount(1);
     expect(await requestCount(page)).toBe(2);
+    expect(errors()).toBe(0);
   });
 });
 

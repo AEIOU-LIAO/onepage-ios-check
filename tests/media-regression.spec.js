@@ -25,7 +25,7 @@ async function prepareMedia(page, baseURL) {
       image: true, imageModels: [IMAGE_MODEL], imageN: [1],
       imageSizes: [['512x512', '测试尺寸']], imageOpts: [],
       vision: { model: MODEL, re: '.*', strict: false },
-      regions: [{ id: 'cn', label: '测试', full: '测试地区', hasKey: true, masked: 'synthetic', chatModels: [MODEL] }]
+      regions: [{ id: 'cn', label: '测试', full: '测试地区', hasKey: true, masked: 'synthetic', steps: [], chatModels: [MODEL] }]
     }] });
     if (path === '/api/ai/models') return reply({ ok: true, chat: [MODEL], image: [IMAGE_MODEL] });
     if (path === '/api/meeting/engines') return reply({ ok: true, cos: false, share: null, engines: [{
