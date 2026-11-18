@@ -1,5 +1,5 @@
 // 只用 WebKit（Safari 的内核），按 iPhone 的屏幕、触摸和 UA 来跑。
-// 不录像、不留 trace（trace 里会有输入的账号密码）；只保留脚本里主动截的图（截图时会把用户名盖住）。
+// 公开运行只输出用例状态，不采集截图、录像和 trace。
 const { defineConfig, devices } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests',
@@ -7,10 +7,10 @@ module.exports = defineConfig({
   expect: { timeout: 15_000 },
   workers: 1,
   retries: 0,
-  reporter: [['list'], ['./tests/summary-reporter.js']],
+  reporter: [['./tests/summary-reporter.js']],
   use: {
     ...devices['iPhone 15'],
-    baseURL: process.env.SITE || 'https://tools.peiqi1.top/',
+    baseURL: 'https://tools.peiqi1.top/',
     serviceWorkers: 'block',
     trace: 'off', video: 'off', screenshot: 'off',
     locale: 'zh-CN', timezoneId: 'Asia/Singapore'
