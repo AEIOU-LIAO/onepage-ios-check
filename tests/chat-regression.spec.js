@@ -244,7 +244,7 @@ test('R13 多问两栏分别完成，并携带问答接着聊（5-1/5-4）', { t
   await openMulti(page);
 
   const selected = page.locator('#multiGrid .mc').filter({
-    has: page.locator('.mc-head b').getByText('DeepSeek', { exact: true })
+    has: page.locator('.mc-head b').filter({ hasText: /^DeepSeek$/ })
   });
   const deepseekIndex = await page.evaluate(() => window.__releaseChat.requests.findIndex(r => r.provider === 'deepseek'));
   const deepseekText = [FIRST, SECOND][deepseekIndex].trim();
