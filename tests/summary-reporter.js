@@ -8,6 +8,11 @@ class Summary {
 
   onTestEnd(test, result) {
     this.rows.push(`- ${result.status === 'passed' ? '通过' : result.status === 'skipped' ? '跳过' : '未通过'} · ${test.title}`);
+    for (const a of result.annotations || []) {
+      if (a.type === 'fixture-status' && /^[1-5]\d{2}$/.test(a.description || '')) {
+        this.rows.push('  - 测试记录写入 HTTP 状态 · ' + a.description);
+      }
+    }
     for (const step of result.steps) {
       if (step.category !== 'test.step') continue;
       if (!step.error) this.steps++;

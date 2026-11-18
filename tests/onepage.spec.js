@@ -1,7 +1,7 @@
 // 只用测试账号、不提问（不消耗任何 AI 额度）。测试中建的待办和对话记录，结束时都会删掉。
 const { test, expect, devices } = require('@playwright/test');
 const { login, state, watchErrors, api } = require('./helpers');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, randomBytes } = require('node:crypto');
 const TAG = 'iOS自动检查';
 
 test('登录、刷新后恢复', async ({ page, baseURL }) => {
@@ -91,29 +91,32 @@ test('页面操作：缩放设置、横竖屏、对话框', async ({ page, baseU
   await test.step('没有页面脚本错误', async () => { expect(errs()).toBe(0); });
 });
 
-test('聊天记录在两台设备之间同步', async ({ page, browser, baseURL }) => {
+test('聊天记录在两台设备之间同步', async ({ page, browser, baseURL }, testInfo) => {
   // 设备 A = page；设备 B = 另一个独立的浏览器环境（同一个测试账号）
   const errs = watchErrors(page);
   await login(page, baseURL);
   const ctxB = await browser.newContext({ ...devices['iPhone 15'], baseURL, serviceWorkers: 'block', locale: 'zh-CN', timezoneId: 'Asia/Singapore' });
   const pageB = await ctxB.newPage();
-  const id = 'ioschk-' + randomUUID(), title = `${TAG}-${id}`, now = Date.now();
+  const id = Date.now().toString(36) + randomBytes(2).toString('hex'), title = `${TAG}-${id}`, now = Date.now();
   const hasFixture = p => p.evaluate(async id => {
     const r = await fetch('/api/me/chats?after=-1', { credentials: 'same-origin' });
     if (!r.ok) throw new Error('无法读取测试账号的云端历史');
     const j = await r.json();
     if (!Array.isArray(j.chats)) throw new Error('云端历史格式不符');
-    return j.chats.some(c => !c.deleted && c.conv?.id === id);
+    return j.chats.some(c => !c.deleted && c.id === id);
   }, id);
   const openHistory = async p => {
     await p.locator('#cards .card .cg').first().click(); await expect(p.locator('#chat')).toBeVisible();
     await p.evaluate(() => { const h = document.querySelector('#chatHistory'); if (h.hidden) document.querySelector('#chatHistoryBtn').click(); });
   };
+  let fixtureCreated = false;
   try {
     await test.step('设备 A 上存进一段对话记录（直接写入，不调用 AI）', async () => {
-      const r = await api(page, 'PUT', '/api/me/chats/' + id, { base: 0, conv: { id, provider: 'qwen', mode: 'chat', title, at: now,
+      const r = await api(page, 'PUT', '/api/me/chats/' + id, { conv: { id, provider: 'qwen', mode: 'chat', title, at: now,
         msgs: [{ role: 'user', content: '这是自动检查写入的一条记录', at: now }, { role: 'assistant', content: '收到（自动检查）', model: 'check', at: now + 1 }] } });
+      testInfo.annotations.push({ type: 'fixture-status', description: String(r.status) });
       expect(r.status).toBe(200);
+      fixtureCreated = true;
     });
     await test.step('设备 A 的历史记录先显示这条测试对话', async () => {
       await openHistory(page);
@@ -145,7 +148,7 @@ test('聊天记录在两台设备之间同步', async ({ page, browser, baseURL 
     });
     await test.step('设备 A 没有页面脚本错误', async () => { expect(errs()).toBe(0); });
   } finally {
-    await api(page, 'DELETE', '/api/me/chats/' + id).catch(() => {});      // 不管成不成，都把测试记录清掉
+    if (fixtureCreated) await api(page, 'DELETE', '/api/me/chats/' + id).catch(() => {});
     await ctxB.close();
   }
 });
